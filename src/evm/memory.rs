@@ -157,8 +157,9 @@ impl Memory {
         }
         
         let new_size = offset + size;
-        let current_words = self.size_words();
-        let new_words = (new_size + 31) / 32; // Round up to word boundary
+        let current_words: usize = self.size_words();
+        // Equivalent to ⌈n / 32⌉. We round up as memory needs to be allocated in words.
+        let new_words: usize = (new_size + 31) / 32; 
         
         if new_words <= current_words {
             return 0;
@@ -172,7 +173,7 @@ impl Memory {
     }
     
     /// Expand memory to at least the given size
-    fn expand_to(&mut self, size: usize) {
+    pub fn expand_to(&mut self, size: usize) {
         if size > self.data.len() {
             self.data.resize(size, 0);
         }

@@ -2,6 +2,7 @@
 
 use tinyevm::evm::memory::Memory;
 use tinyevm::types::*;
+use ethereum_types::U256;
 
 #[test]
 fn test_memory_load_store() {
@@ -47,9 +48,11 @@ fn test_memory_store_byte() {
     memory.store_byte(1, 0x34);
     memory.store_byte(2, 0x56);
     
-    // Load as word (should be zero-padded)
+    // Load as word (should be zero-padded, big-endian format)
     let value = memory.load(0);
-    assert_eq!(value, Word::from(0x0000000000000000000000000000000000000000000000000000000000123456u64));
+
+    // Use from_str_radix because from has as a parameter a 64 bit int and we want to pass a 256 bit int.
+    assert_eq!(value, Word::from_str_radix("1234560000000000000000000000000000000000000000000000000000000000", 16).unwrap());
 }
 
 #[test]
@@ -71,15 +74,17 @@ fn test_memory_load_range() {
 
 #[test]
 fn test_memory_expansion_cost() {
-    let memory = Memory::new();
+    let mut memory = Memory::new();
     
     // Cost for first word
     let cost = memory.expansion_cost(0, 32);
     assert_eq!(cost, 3);
+
+    memory.expand_to(32);
     
     // Cost for second word
     let cost = memory.expansion_cost(32, 32);
-    assert_eq!(cost, 5);
+    assert_eq!(cost, 3);
 }
 
 #[test]
