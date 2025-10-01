@@ -2,7 +2,6 @@
 
 use tinyevm::evm::memory::Memory;
 use tinyevm::types::*;
-use ethereum_types::U256;
 
 #[test]
 fn test_memory_load_store() {
