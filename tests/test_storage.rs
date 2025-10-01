@@ -40,6 +40,8 @@ fn test_storage_zero_value() {
 fn test_storage_operation_cost() {
     let mut storage = Storage::new();
     let key = Word::from(42);
+    let key_2 = Word::from(69);
+
     
     // Setting zero to non-zero: SSTORE cost
     let cost = storage.operation_cost(&key, &Word::from(100));
@@ -57,7 +59,7 @@ fn test_storage_operation_cost() {
     assert_eq!(cost, 20000);
     
     // Setting zero to zero: no cost
-    let cost = storage.operation_cost(&key, &Word::zero());
+    let cost = storage.operation_cost(&key_2, &Word::zero());
     assert_eq!(cost, 0);
 }
 
