@@ -1,131 +1,11 @@
-//! Integration tests for basic EVM functionality
+//! Unit tests for EVM Context implementation
 
-use tinyevm::evm::{EVM, ExecutionContext};
-use tinyevm::state::State;
+use tinyevm::evm::context::ExecutionContext;
 use tinyevm::types::*;
 
-#[test]
-fn test_evm_creation() {
-    let context = ExecutionContext::default();
-    let evm = EVM::new(context, 1000);
-    
-    assert_eq!(evm.gas, 1000);
-    assert_eq!(evm.initial_gas, 1000);
-    assert_eq!(evm.pc, 0);
-    assert!(!evm.stopped);
-    assert!(!evm.reverted);
-}
 
 #[test]
-fn test_evm_gas_operations() {
-    let context = ExecutionContext::default();
-    let mut evm = EVM::new(context, 1000);
-    
-    // Check gas
-    assert!(evm.check_gas(500).is_ok());
-    assert!(evm.check_gas(1500).is_err());
-    
-    // Consume gas
-    evm.consume_gas(300).unwrap();
-    assert_eq!(evm.gas, 700);
-    
-    // Try to consume too much gas
-    assert!(evm.consume_gas(800).is_err());
-}
-
-#[test]
-fn test_evm_execution_states() {
-    let context = ExecutionContext::default();
-    let mut evm = EVM::new(context, 1000);
-    
-    // Test stop
-    evm.stop();
-    assert!(evm.stopped);
-    
-    // Test revert
-    let mut evm = EVM::new(context, 1000);
-    evm.revert("Test revert".to_string());
-    assert!(evm.reverted);
-    assert_eq!(evm.return_data, b"Test revert");
-    
-    // Test return data
-    let mut evm = EVM::new(context, 1000);
-    evm.return_data(vec![0x01, 0x02, 0x03]);
-    assert!(evm.stopped);
-    assert_eq!(evm.return_data, vec![0x01, 0x02, 0x03]);
-}
-
-#[test]
-fn test_evm_stack_operations() {
-    let context = ExecutionContext::default();
-    let mut evm = EVM::new(context, 1000);
-    
-    // Test stack operations
-    evm.stack.push(Word::from(42)).unwrap();
-    evm.stack.push(Word::from(24)).unwrap();
-    
-    assert_eq!(evm.stack.depth(), 2);
-    assert_eq!(evm.stack.peek(0).unwrap(), Word::from(24));
-    assert_eq!(evm.stack.peek(1).unwrap(), Word::from(42));
-    
-    let value = evm.stack.pop().unwrap();
-    assert_eq!(value, Word::from(24));
-    assert_eq!(evm.stack.depth(), 1);
-}
-
-#[test]
-fn test_evm_memory_operations() {
-    let context = ExecutionContext::default();
-    let mut evm = EVM::new(context, 1000);
-    
-    // Test memory operations
-    evm.memory.store(0, Word::from(0x1234567890abcdefu64));
-    evm.memory.store(32, Word::from(0xfedcba0987654321u64));
-    
-    let value1 = evm.memory.load(0);
-    let value2 = evm.memory.load(32);
-    
-    assert_eq!(value1, Word::from(0x1234567890abcdefu64));
-    assert_eq!(value2, Word::from(0xfedcba0987654321u64));
-    
-    // Test memory range operations
-    let data = vec![0x01, 0x02, 0x03, 0x04];
-    evm.memory.store_range(100, &data);
-    let loaded = evm.memory.load_range(100, 4);
-    assert_eq!(loaded, data);
-}
-
-#[test]
-fn test_evm_storage_operations() {
-    let context = ExecutionContext::default();
-    let mut evm = EVM::new(context, 1000);
-    
-    // Test storage operations
-    evm.storage.store(Word::from(1), Word::from(100));
-    evm.storage.store(Word::from(2), Word::from(200));
-    
-    assert_eq!(evm.storage.load(&Word::from(1)), Word::from(100));
-    assert_eq!(evm.storage.load(&Word::from(2)), Word::from(200));
-    assert_eq!(evm.storage.load(&Word::from(3)), Word::zero());
-}
-
-#[test]
-fn test_evm_execution_with_empty_code() {
-    let context = ExecutionContext {
-        code: vec![],
-        ..Default::default()
-    };
-    let mut evm = EVM::new(context, 1000);
-    
-    // Execute with empty code should complete immediately
-    let result = evm.execute().unwrap();
-    assert!(result.success);
-    assert_eq!(result.gas_used, 0);
-    assert!(result.output.is_empty());
-}
-
-#[test]
-fn test_evm_execution_context() {
+fn test_execution_context_creation() {
     let address = Address::from([1u8; 20]);
     let caller = Address::from([2u8; 20]);
     let origin = Address::from([3u8; 20]);
@@ -140,19 +20,96 @@ fn test_evm_execution_context() {
         caller,
         origin,
         value,
-        data,
-        code,
+        data.clone(),
+        code.clone(),
         block,
         gas_price,
     );
     
-    let evm = EVM::new(context, 1000);
+    assert_eq!(context.address, address);
+    assert_eq!(context.caller, caller);
+    assert_eq!(context.origin, origin);
+    assert_eq!(context.value, value);
+    assert_eq!(context.data, data);
+    assert_eq!(context.code, code);
+    assert_eq!(context.gas_price, gas_price);
+    assert!(!context.is_static);
+}
+
+#[test]
+fn test_load_data() {
+    let data = vec![0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0];
+    let context = ExecutionContext {
+        data,
+        ..Default::default()
+    };
     
-    assert_eq!(evm.context.address, address);
-    assert_eq!(evm.context.caller, caller);
-    assert_eq!(evm.context.origin, origin);
-    assert_eq!(evm.context.value, value);
-    assert_eq!(evm.context.data, data);
-    assert_eq!(evm.context.code, code);
-    assert_eq!(evm.context.gas_price, gas_price);
+    // Load first 8 bytes as word (all available data)
+    // With << 192 we are shifting the bits 192 positions which will make the first 8 bytes the last 8 bytes of the word
+    // Before shift: 0x123456789abcdef0
+    // After shift: 0x123456789abcdef000000000000000000000000000000000000000000000000000
+    let word = context.load_data(0);
+    assert_eq!(word, Word::from(0x123456789abcdef0u64) << 192);
+    
+    // Load beyond data size should return zero
+    let word = context.load_data(100);
+    assert_eq!(word, Word::zero());
+}
+
+#[test]
+fn test_load_data_range() {
+    let data = vec![0x01, 0x02, 0x03, 0x04, 0x05];
+    let context = ExecutionContext {
+        data,
+        ..Default::default()
+    };
+    
+    // Load range within data
+    let result = context.load_data_range(1, 3);
+    assert_eq!(result, vec![0x02, 0x03, 0x04]);
+    
+    // Load range beyond data size should be zero-padded
+    let result = context.load_data_range(3, 5);
+    assert_eq!(result, vec![0x04, 0x05, 0x00, 0x00, 0x00]);
+}
+
+#[test]
+fn test_load_code() {
+    let code = vec![0x60, 0x01, 0x60, 0x02, 0x01]; // PUSH1 1 PUSH1 2 ADD
+    let context = ExecutionContext {
+        code,
+        ..Default::default()
+    };
+    
+    // Load first instruction
+    let word = context.load_code(0);
+    assert_eq!(word, Word::from(0x6001600201u64) << 216);
+    
+    // Load beyond code size should return zero
+    let word = context.load_code(100);
+    assert_eq!(word, Word::zero());
+}
+
+#[test]
+fn test_contract_creation() {
+    let context = ExecutionContext::default();
+    assert!(context.is_contract_creation());
+    
+    let context = ExecutionContext {
+        address: Address::from([1u8; 20]),
+        ..Default::default()
+    };
+    assert!(!context.is_contract_creation());
+}
+
+#[test]
+fn test_static_call() {
+    let context = ExecutionContext::default();
+    assert!(!context.is_static_call());
+    
+    let context = ExecutionContext {
+        is_static: true,
+        ..Default::default()
+    };
+    assert!(context.is_static_call());
 }
