@@ -89,9 +89,32 @@ impl EVM {
     
     /// Execute the next instruction at the current PC
     fn execute_next_instruction(&mut self) -> Result<()> {
-        // TODO: This will be implemented in Phase 2 when we add opcodes
-        // For now, just increment PC to avoid infinite loops
-        self.pc += 1;
+        // Fetch opcode
+        let opcode_byte = self.context.code[self.pc];
+        let opcode = match opcodes::Opcode::from_byte(opcode_byte) {
+            Some(op) => op,
+            None => return Err(Error::InvalidOpcode(opcode_byte)),
+        };
+        
+        // Check gas cost
+        let gas_cost = opcode.gas_cost();
+        self.consume_gas(gas_cost)?;
+        
+        // TODO: Add additional opcodes as they are implemented
+        match opcode {
+            opcodes::Opcode::PUSH1 => {
+                opcodes::stack::execute_stack_opcode(opcode, self)?;
+            }
+            _ => {
+                return Err(Error::NotImplementedOpcode(opcode_byte));
+            }
+        }
+        
+        // Increment PC (unless opcode modified it)
+        if !opcode.is_jump() {
+            self.pc += 1;
+        }
+        
         Ok(())
     }
     
@@ -134,3 +157,4 @@ pub mod stack;
 pub mod memory;
 pub mod storage;
 pub mod context;
+pub mod opcodes;

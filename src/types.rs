@@ -47,6 +47,9 @@ pub enum Error {
     
     #[error("Invalid opcode: 0x{0:02x}")]
     InvalidOpcode(u8),
+
+    #[error("Opcode not implemented: 0x{0:02x}")]
+    NotImplementedOpcode(u8),
     
     #[error("Invalid jump destination: {0}")]
     InvalidJump(usize),

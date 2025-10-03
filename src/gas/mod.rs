@@ -194,6 +194,22 @@ pub mod costs {
     pub const KECCAK256: Gas = 30;
     pub const KECCAK256_WORD: Gas = 6;
 
+    // Other
+    pub const SIGNEXTEND: Gas = LOW;
+    pub const BALANCE: Gas = 100;        // Warm account access
+    pub const BALANCE_COLD: Gas = 2600;
+    pub const MLOAD: Gas = VERY_LOW;
+    pub const MSTORE: Gas = VERY_LOW;
+    pub const MSTORE8: Gas = VERY_LOW;
+    pub const SLOAD: Gas = 200;
+    pub const SLOAD_COLD: Gas = 2100; 
+    pub const SSTORE: Gas = 20000;
+    pub const SSTORE_CLEAR: Gas = 5000; 
+    pub const PC: Gas = BASE;
+    pub const MSIZE: Gas = BASE;
+    pub const GAS: Gas = BASE;
+    pub const POP: Gas = BASE;
+
     // System operations
     pub const CREATE: Gas = 32000;
     pub const CALL: Gas = 100;
