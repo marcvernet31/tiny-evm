@@ -64,7 +64,7 @@ fn test_gas_refund_limit() {
     
     // Apply refunds (should be limited to 1/2 of gas used = 100)
     meter.apply_refunds();
-    assert_eq!(meter.gas_remaining(), 300); // 200 + 100 refund (limited)
+    assert_eq!(meter.gas_remaining(), 900); // 800 remaining + 100 refund (limited)
     assert_eq!(meter.refunds(), 0);
 }
 
@@ -95,18 +95,24 @@ fn test_exp_cost() {
     // Zero exponent
     assert_eq!(exp_cost(&Word::zero()), costs::EXP);
     
-    // Small exponent
+    // Small exponent (1 byte)
     assert_eq!(exp_cost(&Word::from(1)), costs::EXP + 50);
     
-    // Larger exponent
-    assert_eq!(exp_cost(&Word::from(256)), costs::EXP + 8 * 50);
+    // Exponent that needs 2 bytes (256 = 0x100)
+    assert_eq!(exp_cost(&Word::from(256)), costs::EXP + 2 * 50);
+    
+    // Exponent that needs 3 bytes (65536 = 0x10000)
+    assert_eq!(exp_cost(&Word::from(65536)), costs::EXP + 3 * 50);
 }
 
 #[test]
 fn test_sha3_cost() {
-    assert_eq!(sha3_cost(0), costs::LOW);
-    assert_eq!(sha3_cost(32), costs::LOW + costs::LOW);
-    assert_eq!(sha3_cost(64), costs::LOW + 2 * costs::LOW);
+    // According to Yellow Paper: 30 + 6 × ⌈input_size_in_bytes / 32⌉
+    assert_eq!(sha3_cost(0), 30 + 6 * 1); // 0 bytes = 1 word = 36 gas
+    assert_eq!(sha3_cost(1), 30 + 6 * 1); // 1 byte = 1 word = 36 gas
+    assert_eq!(sha3_cost(32), 30 + 6 * 1); // 32 bytes = 1 word = 36 gas
+    assert_eq!(sha3_cost(33), 30 + 6 * 2); // 33 bytes = 2 words = 42 gas
+    assert_eq!(sha3_cost(64), 30 + 6 * 2); // 64 bytes = 2 words = 42 gas
 }
 
 #[test]

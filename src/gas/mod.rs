@@ -86,9 +86,11 @@ impl GasMeter {
     }
 }
 
-/// Gas costs for different operations
 pub mod costs {
     use super::*;
+
+    // Gas costs defined on Apendix G. of Yellow Paper.
+    // https://ethereum.github.io/yellowpaper/paper.pdf
     
     // Base costs
     pub const BASE: Gas = 2;
@@ -187,7 +189,11 @@ pub mod costs {
     pub const LOG2: Gas = 1125;
     pub const LOG3: Gas = 1500;
     pub const LOG4: Gas = 1875;
-    
+
+    // Keccak256 operations
+    pub const KECCAK256: Gas = 30;
+    pub const KECCAK256_WORD: Gas = 6;
+
     // System operations
     pub const CREATE: Gas = 32000;
     pub const CALL: Gas = 100;
@@ -284,20 +290,35 @@ pub fn memory_expansion_cost(current_size: usize, new_size: usize) -> Gas {
 }
 
 /// Calculate gas cost for exponentiation
+/// 
+/// # Explanation
+/// In the yellow paper the gas cost is formalized as 10 + 50 * (1 + log256(exponent))
+/// The clever way to calculate this logarithm is by just counting the number of bits, which is equivalent to log256(exponent).
+/// The whole point from the begining was just to count the number of bites, which makes sense as a way to calculate the gas needed.
+/// log256(expponent) returns the number of bytes needed to represent the exponent in base 256. 
 pub fn exp_cost(exponent: &Word) -> Gas {
     if exponent.is_zero() {
         return costs::EXP;
     }
     
+    // Calculate log256(exponent) + 1
+    // This is equivalent to counting the number of bytes needed to represent the exponent
     let bit_length = 256 - exponent.leading_zeros();
-    let cost = costs::EXP + (bit_length * 50) as Gas;
+    let log256_exponent = if bit_length == 0 {
+        0
+    } else {
+        (bit_length - 1) / 8 + 1  // log256(exponent) + 1
+    };
+    
+    let cost = costs::EXP + (log256_exponent * 50) as Gas;
     
     cost
 }
 
 /// Calculate gas cost for SHA3 operation
+/// According to Yellow Paper: Gas cost = 30 + 6 × ⌈input_size_in_bytes / 32⌉
 pub fn sha3_cost(data_size: usize) -> Gas {
-    costs::LOW + ((data_size + 31) / 32) as Gas * costs::LOW
+    costs::KECCAK256 + ((data_size + 31) / 32) as Gas * costs::KECCAK256_WORD
 }
 
 /// Calculate gas cost for log operation
@@ -326,126 +347,5 @@ pub fn call_cost(value: &Wei, is_call: bool) -> Gas {
         base_cost
     } else {
         base_cost + 9000 // Additional cost for value transfer
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    
-    #[test]
-    fn test_gas_meter_creation() {
-        let meter = GasMeter::new(1000);
-        assert_eq!(meter.gas_remaining(), 1000);
-        assert_eq!(meter.initial_gas(), 1000);
-        assert_eq!(meter.gas_used(), 0);
-    }
-    
-    #[test]
-    fn test_gas_consumption() {
-        let mut meter = GasMeter::new(1000);
-        
-        // Consume gas
-        meter.consume(100).unwrap();
-        assert_eq!(meter.gas_remaining(), 900);
-        assert_eq!(meter.gas_used(), 100);
-        
-        // Consume more gas
-        meter.consume(200).unwrap();
-        assert_eq!(meter.gas_remaining(), 700);
-        assert_eq!(meter.gas_used(), 300);
-    }
-    
-    #[test]
-    fn test_gas_insufficient() {
-        let mut meter = GasMeter::new(100);
-        
-        // Try to consume more gas than available
-        assert!(meter.consume(200).is_err());
-        assert_eq!(meter.gas_remaining(), 100); // Should not change
-    }
-    
-    #[test]
-    fn test_gas_refunds() {
-        let mut meter = GasMeter::new(1000);
-        
-        // Consume some gas
-        meter.consume(500).unwrap();
-        
-        // Add refunds
-        meter.add_refund(100);
-        assert_eq!(meter.refunds(), 100);
-        
-        // Apply refunds
-        meter.apply_refunds();
-        assert_eq!(meter.gas_remaining(), 600); // 500 + 100 refund
-        assert_eq!(meter.refunds(), 0);
-    }
-    
-    #[test]
-    fn test_gas_refund_limit() {
-        let mut meter = GasMeter::new(1000);
-        
-        // Consume gas
-        meter.consume(200).unwrap();
-        
-        // Add refunds (more than 1/2 of gas used)
-        meter.add_refund(150);
-        
-        // Apply refunds (should be limited to 1/2 of gas used = 100)
-        meter.apply_refunds();
-        assert_eq!(meter.gas_remaining(), 300); // 200 + 100 refund (limited)
-        assert_eq!(meter.refunds(), 0);
-    }
-    
-    #[test]
-    fn test_memory_expansion_cost() {
-        // No expansion
-        assert_eq!(memory_expansion_cost(100, 50), 0);
-        
-        // Small expansion
-        assert_eq!(memory_expansion_cost(0, 32), 3); // 1 word
-        
-        // Larger expansion
-        assert_eq!(memory_expansion_cost(0, 64), 5); // 2 words
-    }
-    
-    #[test]
-    fn test_exp_cost() {
-        // Zero exponent
-        assert_eq!(exp_cost(&Word::zero()), costs::EXP);
-        
-        // Small exponent
-        assert_eq!(exp_cost(&Word::from(1)), costs::EXP + 50);
-        
-        // Larger exponent
-        assert_eq!(exp_cost(&Word::from(256)), costs::EXP + 8 * 50);
-    }
-    
-    #[test]
-    fn test_sha3_cost() {
-        assert_eq!(sha3_cost(0), costs::LOW);
-        assert_eq!(sha3_cost(32), costs::LOW + costs::LOW);
-        assert_eq!(sha3_cost(64), costs::LOW + 2 * costs::LOW);
-    }
-    
-    #[test]
-    fn test_log_cost() {
-        assert_eq!(log_cost(0, 0), costs::LOG0);
-        assert_eq!(log_cost(1, 0), costs::LOG1);
-        assert_eq!(log_cost(2, 32), costs::LOG2 + costs::LOW);
-        assert_eq!(log_cost(5, 0), 0); // Invalid
-    }
-    
-    #[test]
-    fn test_call_cost() {
-        // Call without value
-        assert_eq!(call_cost(&Wei::zero(), true), costs::CALL);
-        
-        // Call with value
-        assert_eq!(call_cost(&Wei::from(1000), true), costs::CALL + 9000);
-        
-        // Callcode without value
-        assert_eq!(call_cost(&Wei::zero(), false), costs::CALLCODE);
     }
 }
