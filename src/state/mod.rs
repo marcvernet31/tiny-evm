@@ -41,8 +41,11 @@ impl Account {
             Hash::zero()
         } else {
             // In a real implementation, this would be the Keccak256 hash
-            // For now, we'll use a simple hash
-            Hash::from_slice(&code[..32.min(code.len())])
+            // For now, we'll pad the code to 32 bytes and use it as a simple hash
+            let mut padded_code = [0u8; 32];
+            let copy_len = code.len().min(32);
+            padded_code[..copy_len].copy_from_slice(&code[..copy_len]);
+            Hash::from(padded_code)
         };
         
         Self {
@@ -167,7 +170,11 @@ impl State {
             Hash::zero()
         } else {
             // In a real implementation, this would be the Keccak256 hash
-            Hash::from_slice(&code[..32.min(code.len())])
+            // For now, we'll pad the code to 32 bytes and use it as a simple hash
+            let mut padded_code = [0u8; 32];
+            let copy_len = code.len().min(32);
+            padded_code[..copy_len].copy_from_slice(&code[..copy_len]);
+            Hash::from(padded_code)
         };
         
         // Update account
