@@ -49,11 +49,30 @@ impl EVMOperation for PushOp {
     }
 }
 
+pub struct SwapOp {
+    swap_index: usize,
+}
+
+impl EVMOperation for SwapOp {
+    fn execute(&self, evm: &mut EVM) -> Result<()> {
+        if self.swap_index >= evm.stack.depth() {
+            return Err(Error::InvalidJump(evm.pc + self.swap_index));
+        }
+
+        evm.stack.swap(self.swap_index)?;
+
+        Ok(())
+    }
+}
 
 pub fn execute_stack_opcode(opcode: Opcode, evm: &mut crate::evm::EVM) -> Result<()> {
     match opcode {
         opcode if opcode.is_push() => {
             let op = PushOp { bytes_to_read: opcode.immediate_bytes() };
+            op.execute(evm)
+        }
+        opcode if opcode.is_swap() => {
+            let op = SwapOp { swap_index: opcode.access_depth_bytes() };
             op.execute(evm)
         }
         _ => Err(Error::InvalidOpcode(opcode as u8)),

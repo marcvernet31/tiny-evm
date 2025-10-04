@@ -102,7 +102,7 @@ impl EVM {
         
         // TODO: Add additional opcodes as they are implemented
         match opcode {
-            opcode if opcode.is_push() => {
+            opcode if opcode.is_stack_opcode() => {
                 opcodes::stack::execute_stack_opcode(opcode, self)?;
             }
             _ => {

@@ -86,12 +86,15 @@ impl Stack {
     /// Swap value top with value at a specific depth
     /// 
     /// # Arguments
-    /// * `depth` - Depth from top (0-15, where 0 = swap top two items)
+    /// * `depth` - Depth from top (1-16, where 1 = swap top with second item)
+    /// 
+    /// * Explanation
+    /// Depth = 0 is invalid as there is no SWAP0 opcode, the first one is SWAP1, whch swaps the top two items.
     /// 
     /// # Errors
     /// Returns `StackUnderflow` if depth exceeds stack size
     pub fn swap(&mut self, depth: usize) -> Result<()> {
-        if depth > 15 {
+        if depth < 1 || depth > 16 {
             return Err(Error::InvalidMemoryAccess("Invalid SWAP depth".to_string()));
         }
         

@@ -372,9 +372,49 @@ impl Opcode {
             Opcode::PUSH30 => 30,
             Opcode::PUSH31 => 31,
             Opcode::PUSH32 => 32,
+            Opcode::SWAP1 => 1,
+            Opcode::SWAP2 => 2,
+            Opcode::SWAP3 => 3,
+            Opcode::SWAP4 => 4,
+            Opcode::SWAP5 => 5,
+            Opcode::SWAP6 => 6,
+            Opcode::SWAP7 => 7,
+            Opcode::SWAP8 => 8,
+            Opcode::SWAP9 => 9,
+            Opcode::SWAP10 => 10,
+            Opcode::SWAP11 => 11,
+            Opcode::SWAP12 => 12,
+            Opcode::SWAP13 => 13,
+            Opcode::SWAP14 => 14,
+            Opcode::SWAP15 => 15,
+            Opcode::SWAP16 => 16,
             _ => 0,
         }
     }
+
+        /// Get the number of immediate bytes this opcode reads
+        pub fn access_depth_bytes(&self) -> usize {
+            match self {
+                Opcode::SWAP1 => 1,
+                Opcode::SWAP2 => 2,
+                Opcode::SWAP3 => 3,
+                Opcode::SWAP4 => 4,
+                Opcode::SWAP5 => 5,
+                Opcode::SWAP6 => 6,
+                Opcode::SWAP7 => 7,
+                Opcode::SWAP8 => 8,
+                Opcode::SWAP9 => 9,
+                Opcode::SWAP10 => 10,
+                Opcode::SWAP11 => 11,
+                Opcode::SWAP12 => 12,
+                Opcode::SWAP13 => 13,
+                Opcode::SWAP14 => 14,
+                Opcode::SWAP15 => 15,
+                Opcode::SWAP16 => 16,
+                _ => 0,
+            }
+        }
+    
 
     pub fn is_push(&self) -> bool {
         matches!(self, Opcode::PUSH1 | Opcode::PUSH2 | Opcode::PUSH3 | Opcode::PUSH4 |
@@ -385,6 +425,17 @@ impl Opcode {
             Opcode::PUSH21 | Opcode::PUSH22 | Opcode::PUSH23 | Opcode::PUSH24 |
             Opcode::PUSH25 | Opcode::PUSH26 | Opcode::PUSH27 | Opcode::PUSH28 |
             Opcode::PUSH29 | Opcode::PUSH30 | Opcode::PUSH31 | Opcode::PUSH32)
+    }
+
+    pub fn is_swap(&self) -> bool {
+        matches!(self, Opcode::SWAP1 | Opcode::SWAP2 | Opcode::SWAP3 | Opcode::SWAP4 |
+            Opcode::SWAP5 | Opcode::SWAP6 | Opcode::SWAP7 | Opcode::SWAP8 |
+            Opcode::SWAP9 | Opcode::SWAP10 | Opcode::SWAP11 | Opcode::SWAP12 |
+            Opcode::SWAP13 | Opcode::SWAP14 | Opcode::SWAP15 | Opcode::SWAP16)
+    }
+
+    pub fn is_stack_opcode(&self) -> bool {
+        self.is_push() || self.is_swap()
     }
     
     /// Check if this opcode is a jump instruction
