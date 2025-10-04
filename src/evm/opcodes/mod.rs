@@ -411,6 +411,22 @@ impl Opcode {
                 Opcode::SWAP14 => 14,
                 Opcode::SWAP15 => 15,
                 Opcode::SWAP16 => 16,
+                Opcode::DUP1 => 0,
+                Opcode::DUP2 => 1,
+                Opcode::DUP3 => 2,
+                Opcode::DUP4 => 3,
+                Opcode::DUP5 => 4,
+                Opcode::DUP6 => 5,
+                Opcode::DUP7 => 6,
+                Opcode::DUP8 => 7,
+                Opcode::DUP9 => 8,
+                Opcode::DUP10 => 9,
+                Opcode::DUP11 => 10,
+                Opcode::DUP12 => 11,
+                Opcode::DUP13 => 12,
+                Opcode::DUP14 => 13,
+                Opcode::DUP15 => 14,
+                Opcode::DUP16 => 15,
                 _ => 0,
             }
         }
@@ -434,8 +450,15 @@ impl Opcode {
             Opcode::SWAP13 | Opcode::SWAP14 | Opcode::SWAP15 | Opcode::SWAP16)
     }
 
+    pub fn is_dup(&self) -> bool {
+        matches!(self, Opcode::DUP1 | Opcode::DUP2 | Opcode::DUP3 | Opcode::DUP4 |
+            Opcode::DUP5 | Opcode::DUP6 | Opcode::DUP7 | Opcode::DUP8 |
+            Opcode::DUP9 | Opcode::DUP10 | Opcode::DUP11 | Opcode::DUP12 |
+            Opcode::DUP13 | Opcode::DUP14 | Opcode::DUP15 | Opcode::DUP16)
+    }
+
     pub fn is_stack_opcode(&self) -> bool {
-        self.is_push() || self.is_swap()
+        self.is_push() || self.is_swap() || self.is_dup()
     }
     
     /// Check if this opcode is a jump instruction
