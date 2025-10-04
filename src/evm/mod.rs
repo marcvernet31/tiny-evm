@@ -102,7 +102,7 @@ impl EVM {
         
         // TODO: Add additional opcodes as they are implemented
         match opcode {
-            opcodes::Opcode::PUSH1 => {
+            opcode if opcode.is_push() => {
                 opcodes::stack::execute_stack_opcode(opcode, self)?;
             }
             _ => {
@@ -111,7 +111,7 @@ impl EVM {
         }
         
         // Increment PC (unless opcode modified it)
-        if !opcode.is_jump() {
+        if !opcode.modifies_pc() {
             self.pc += 1;
         }
         

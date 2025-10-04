@@ -375,10 +375,26 @@ impl Opcode {
             _ => 0,
         }
     }
+
+    pub fn is_push(&self) -> bool {
+        matches!(self, Opcode::PUSH1 | Opcode::PUSH2 | Opcode::PUSH3 | Opcode::PUSH4 |
+            Opcode::PUSH5 | Opcode::PUSH6 | Opcode::PUSH7 | Opcode::PUSH8 |
+            Opcode::PUSH9 | Opcode::PUSH10 | Opcode::PUSH11 | Opcode::PUSH12 |
+            Opcode::PUSH13 | Opcode::PUSH14 | Opcode::PUSH15 | Opcode::PUSH16 |
+            Opcode::PUSH17 | Opcode::PUSH18 | Opcode::PUSH19 | Opcode::PUSH20 |
+            Opcode::PUSH21 | Opcode::PUSH22 | Opcode::PUSH23 | Opcode::PUSH24 |
+            Opcode::PUSH25 | Opcode::PUSH26 | Opcode::PUSH27 | Opcode::PUSH28 |
+            Opcode::PUSH29 | Opcode::PUSH30 | Opcode::PUSH31 | Opcode::PUSH32)
+    }
     
     /// Check if this opcode is a jump instruction
     pub fn is_jump(&self) -> bool {
         matches!(self, Opcode::JUMP | Opcode::JUMPI)
+    }
+    
+    /// The only opcodes that modify the PC are JUMP and PUSH
+    pub fn modifies_pc(&self) -> bool {
+        self.is_jump() || self.is_push()
     }
     
     /// Get gas cost for this opcode
