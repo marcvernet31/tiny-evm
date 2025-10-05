@@ -458,7 +458,7 @@ impl Opcode {
     }
 
     pub fn is_stack_opcode(&self) -> bool {
-        self.is_push() || self.is_swap() || self.is_dup()
+        self.is_push() || self.is_swap() || self.is_dup() || matches!(self, Opcode::POP)
     }
     
     /// Check if this opcode is a jump instruction

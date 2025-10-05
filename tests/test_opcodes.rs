@@ -5,5 +5,6 @@ mod evm {
         pub mod push;
         pub mod swap;
         pub mod dup;
+        pub mod pop;
     }
 }
