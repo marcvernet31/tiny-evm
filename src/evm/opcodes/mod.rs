@@ -460,6 +460,15 @@ impl Opcode {
     pub fn is_stack_opcode(&self) -> bool {
         self.is_push() || self.is_swap() || self.is_dup() || matches!(self, Opcode::POP)
     }
+
+    pub fn is_arithmetic_opcode(&self) -> bool {
+        matches!(self, Opcode::ADD | Opcode::MUL | Opcode::SUB | Opcode::DIV |
+            Opcode::SDIV | Opcode::MOD | Opcode::SMOD | Opcode::ADDMOD |
+            Opcode::MULMOD | Opcode::EXP | Opcode::SIGNEXTEND | Opcode::LT |
+            Opcode::GT | Opcode::SLT | Opcode::SGT | Opcode::EQ | Opcode::ISZERO |
+            Opcode::AND | Opcode::OR | Opcode::XOR | Opcode::NOT | Opcode::BYTE |
+            Opcode::SHL | Opcode::SHR | Opcode::SAR)
+    }
     
     /// Check if this opcode is a jump instruction
     pub fn is_jump(&self) -> bool {

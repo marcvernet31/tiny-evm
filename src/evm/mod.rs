@@ -105,6 +105,9 @@ impl EVM {
             opcode if opcode.is_stack_opcode() => {
                 opcodes::stack::execute_stack_opcode(opcode, self)?;
             }
+            opcode if opcode.is_arithmetic_opcode() => {
+                opcodes::arithmetic::execute_arithmetic_opcode(opcode, self)?;
+            }
             _ => {
                 return Err(Error::NotImplementedOpcode(opcode_byte));
             }
