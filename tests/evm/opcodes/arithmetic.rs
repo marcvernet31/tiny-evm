@@ -491,3 +491,318 @@ fn test_add_chain_operations() {
     assert_eq!(evm.stack.depth(), 1);
     assert_eq!(evm.stack.peek(0).unwrap(), Word::from(10));
 }
+
+// ============================================================================
+// MUL TESTS
+// ============================================================================
+
+#[test]
+fn test_mul_basic() {
+    // Test MUL functionality - multiply two numbers
+    let bytecode = vec![
+        0x60, 0x05,           // PUSH1 5
+        0x60, 0x03,           // PUSH1 3
+        0x02,                 // MUL (3 * 5 = 15)
+    ];
+    
+    let context = ExecutionContext {
+        address: Address::zero(),
+        caller: Address::zero(),
+        origin: Address::zero(),
+        value: Word::zero(),
+        data: vec![],
+        code: bytecode,
+        block: BlockContext {
+            number: 1,
+            timestamp: 1000,
+            difficulty: Word::zero(),
+            gas_limit: 1000000,
+            coinbase: Address::zero(),
+            chain_id: 1,
+            base_fee: Some(Word::zero()),
+        },
+        gas_price: Word::zero(),
+        is_static: false,
+    };
+    
+    let mut evm = EVM::new(context, 100000);
+    let result = evm.execute().unwrap();
+    
+    assert!(result.success);
+    assert_eq!(evm.stack.depth(), 1);
+    assert_eq!(evm.stack.peek(0).unwrap(), Word::from(15));
+}
+
+#[test]
+fn test_mul_zero() {
+    // Test MUL with zero
+    let bytecode = vec![
+        0x60, 0x00,           // PUSH1 0
+        0x60, 0x05,           // PUSH1 5
+        0x02,                 // MUL (5 * 0 = 0)
+    ];
+    
+    let context = ExecutionContext {
+        address: Address::zero(),
+        caller: Address::zero(),
+        origin: Address::zero(),
+        value: Word::zero(),
+        data: vec![],
+        code: bytecode,
+        block: BlockContext {
+            number: 1,
+            timestamp: 1000,
+            difficulty: Word::zero(),
+            gas_limit: 1000000,
+            coinbase: Address::zero(),
+            chain_id: 1,
+            base_fee: Some(Word::zero()),
+        },
+        gas_price: Word::zero(),
+        is_static: false,
+    };
+    
+    let mut evm = EVM::new(context, 100000);
+    let result = evm.execute().unwrap();
+    
+    assert!(result.success);
+    assert_eq!(evm.stack.depth(), 1);
+    assert_eq!(evm.stack.peek(0).unwrap(), Word::zero());
+}
+
+// ============================================================================
+// SUB TESTS
+// ============================================================================
+
+#[test]
+fn test_sub_basic() {
+    // Test SUB functionality - subtract two numbers
+    let bytecode = vec![
+        0x60, 0x05,           // PUSH1 5
+        0x60, 0x03,           // PUSH1 3
+        0x03,                 // SUB (5 - 3 = 2)
+    ];
+    
+    let context = ExecutionContext {
+        address: Address::zero(),
+        caller: Address::zero(),
+        origin: Address::zero(),
+        value: Word::zero(),
+        data: vec![],
+        code: bytecode,
+        block: BlockContext {
+            number: 1,
+            timestamp: 1000,
+            difficulty: Word::zero(),
+            gas_limit: 1000000,
+            coinbase: Address::zero(),
+            chain_id: 1,
+            base_fee: Some(Word::zero()),
+        },
+        gas_price: Word::zero(),
+        is_static: false,
+    };
+    
+    let mut evm = EVM::new(context, 100000);
+    let result = evm.execute().unwrap();
+    
+    assert!(result.success);
+    assert_eq!(evm.stack.depth(), 1);
+    assert_eq!(evm.stack.peek(0).unwrap(), Word::from(2));
+}
+
+#[test]
+fn test_sub_underflow() {
+    // Test SUB underflow (wrapping behavior)
+    // 3 - 5 should wrap around (not saturate to 0)
+    let bytecode = vec![
+        0x60, 0x05,           // PUSH1 5
+        0x60, 0x03,           // PUSH1 3
+        0x03,                 // SUB (3 - 5 = wraps to large number)
+    ];
+    
+    let context = ExecutionContext {
+        address: Address::zero(),
+        caller: Address::zero(),
+        origin: Address::zero(),
+        value: Word::zero(),
+        data: vec![],
+        code: bytecode,
+        block: BlockContext {
+            number: 1,
+            timestamp: 1000,
+            difficulty: Word::zero(),
+            gas_limit: 1000000,
+            coinbase: Address::zero(),
+            chain_id: 1,
+            base_fee: Some(Word::zero()),
+        },
+        gas_price: Word::zero(),
+        is_static: false,
+    };
+    
+    let mut evm = EVM::new(context, 100000);
+    let result = evm.execute().unwrap();
+    
+    assert!(result.success);
+    assert_eq!(evm.stack.depth(), 1);
+    // 3 - 5 = -2 in two's complement = 2^256 - 2 (a very large number)
+    // Should NOT be 0 (that would be saturating)
+    assert_ne!(evm.stack.peek(0).unwrap(), Word::zero());
+}
+
+// ============================================================================
+// DIV TESTS
+// ============================================================================
+
+#[test]
+fn test_div_basic() {
+    // Test DIV functionality - divide two numbers
+    let bytecode = vec![
+        0x60, 0x02,           // PUSH1 2
+        0x60, 0x0a,           // PUSH1 10
+        0x04,                 // DIV (10 / 2 = 5)
+    ];
+    
+    let context = ExecutionContext {
+        address: Address::zero(),
+        caller: Address::zero(),
+        origin: Address::zero(),
+        value: Word::zero(),
+        data: vec![],
+        code: bytecode,
+        block: BlockContext {
+            number: 1,
+            timestamp: 1000,
+            difficulty: Word::zero(),
+            gas_limit: 1000000,
+            coinbase: Address::zero(),
+            chain_id: 1,
+            base_fee: Some(Word::zero()),
+        },
+        gas_price: Word::zero(),
+        is_static: false,
+    };
+    
+    let mut evm = EVM::new(context, 100000);
+    let result = evm.execute().unwrap();
+    
+    assert!(result.success);
+    assert_eq!(evm.stack.depth(), 1);
+    assert_eq!(evm.stack.peek(0).unwrap(), Word::from(5));
+}
+
+#[test]
+fn test_div_by_zero() {
+    // Test DIV by zero - should return 0 (not error!)
+    let bytecode = vec![
+        0x60, 0x00,           // PUSH1 0
+        0x60, 0x0a,           // PUSH1 10
+        0x04,                 // DIV (10 / 0 = 0)
+    ];
+    
+    let context = ExecutionContext {
+        address: Address::zero(),
+        caller: Address::zero(),
+        origin: Address::zero(),
+        value: Word::zero(),
+        data: vec![],
+        code: bytecode,
+        block: BlockContext {
+            number: 1,
+            timestamp: 1000,
+            difficulty: Word::zero(),
+            gas_limit: 1000000,
+            coinbase: Address::zero(),
+            chain_id: 1,
+            base_fee: Some(Word::zero()),
+        },
+        gas_price: Word::zero(),
+        is_static: false,
+    };
+    
+    let mut evm = EVM::new(context, 100000);
+    let result = evm.execute().unwrap();
+    
+    assert!(result.success);
+    assert_eq!(evm.stack.depth(), 1);
+    assert_eq!(evm.stack.peek(0).unwrap(), Word::zero());  // Returns 0!
+}
+
+// ============================================================================
+// MOD TESTS
+// ============================================================================
+
+#[test]
+fn test_mod_basic() {
+    // Test MOD functionality - modulo operation
+    let bytecode = vec![
+        0x60, 0x03,           // PUSH1 3
+        0x60, 0x0a,           // PUSH1 10
+        0x06,                 // MOD (10 % 3 = 1)
+    ];
+    
+    let context = ExecutionContext {
+        address: Address::zero(),
+        caller: Address::zero(),
+        origin: Address::zero(),
+        value: Word::zero(),
+        data: vec![],
+        code: bytecode,
+        block: BlockContext {
+            number: 1,
+            timestamp: 1000,
+            difficulty: Word::zero(),
+            gas_limit: 1000000,
+            coinbase: Address::zero(),
+            chain_id: 1,
+            base_fee: Some(Word::zero()),
+        },
+        gas_price: Word::zero(),
+        is_static: false,
+    };
+    
+    let mut evm = EVM::new(context, 100000);
+    let result = evm.execute().unwrap();
+    
+    assert!(result.success);
+    assert_eq!(evm.stack.depth(), 1);
+    assert_eq!(evm.stack.peek(0).unwrap(), Word::from(1));
+}
+
+#[test]
+fn test_mod_by_zero() {
+    // Test MOD by zero - should return 0 (not error!)
+    let bytecode = vec![
+        0x60, 0x00,           // PUSH1 0
+        0x60, 0x0a,           // PUSH1 10
+        0x06,                 // MOD (10 % 0 = 0)
+    ];
+    
+    let context = ExecutionContext {
+        address: Address::zero(),
+        caller: Address::zero(),
+        origin: Address::zero(),
+        value: Word::zero(),
+        data: vec![],
+        code: bytecode,
+        block: BlockContext {
+            number: 1,
+            timestamp: 1000,
+            difficulty: Word::zero(),
+            gas_limit: 1000000,
+            coinbase: Address::zero(),
+            chain_id: 1,
+            base_fee: Some(Word::zero()),
+        },
+        gas_price: Word::zero(),
+        is_static: false,
+    };
+    
+    let mut evm = EVM::new(context, 100000);
+    let result = evm.execute().unwrap();
+    
+    assert!(result.success);
+    assert_eq!(evm.stack.depth(), 1);
+    assert_eq!(evm.stack.peek(0).unwrap(), Word::zero());  // Returns 0!
+}
